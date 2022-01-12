@@ -1,10 +1,3 @@
--- This software is copyright Kong Inc. and its licensors.
--- Use of the software is subject to the agreement between your organization
--- and Kong Inc. If there is no such agreement, use is governed by and
--- subject to the terms of the Kong Master Software License Agreement found
--- at https://konghq.com/enterprisesoftwarelicense/.
--- [ END OF LICENSE 0867164ffc95e54f04670b5169c09574bdbd9bba ]
-
 local multipart = require "multipart"
 local cjson = require "cjson"
 local pl_template = require "pl.template"
@@ -265,7 +258,6 @@ local function transform_querystrings(conf)
 
   local querystring = pl_copy_table(template_environment.query_params)
 
-
   -- Remove querystring(s)
   for _, name, value in iter(conf.remove.querystring) do
     querystring[name] = nil
@@ -303,7 +295,6 @@ local function transform_querystrings(conf)
   for _, name, value in iter(conf.append.querystring) do
     querystring[name] = append_value(querystring[name], value)
   end
-
   set_uri_args(querystring)
 end
 
