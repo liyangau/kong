@@ -278,15 +278,11 @@ local function transform_querystrings(conf)
     querystring[old_name] = nil
   end
 
+  -- Replace querystring(s)
   for _, name, value in iter(conf.replace.querystring) do
     if querystring[name] then
       querystring[name] = value
     end
-  end
-
-  -- Append querystring(s)
-  for _, name, value in iter(conf.append.querystring) do
-    querystring[name] = append_value(querystring[name], value)
   end
   
   -- Clear all querystring(s)
@@ -301,6 +297,11 @@ local function transform_querystrings(conf)
     if not querystring[name] then
       querystring[name] = value
     end
+  end
+
+  -- Append querystring(s)
+  for _, name, value in iter(conf.append.querystring) do
+    querystring[name] = append_value(querystring[name], value)
   end
 
   set_uri_args(querystring)
