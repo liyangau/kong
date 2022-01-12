@@ -1,3 +1,10 @@
+-- This software is copyright Kong Inc. and its licensors.
+-- Use of the software is subject to the agreement between your organization
+-- and Kong Inc. If there is no such agreement, use is governed by and
+-- subject to the terms of the Kong Master Software License Agreement found
+-- at https://konghq.com/enterprisesoftwarelicense/.
+-- [ END OF LICENSE 0867164ffc95e54f04670b5169c09574bdbd9bba ]
+
 local multipart = require "multipart"
 local cjson = require "cjson"
 local pl_template = require "pl.template"
@@ -252,11 +259,12 @@ local function transform_querystrings(conf)
 
   if not (#conf.remove.querystring > 0 or #conf.rename.querystring > 0 or
           #conf.replace.querystring > 0 or #conf.add.querystring > 0 or
-          #conf.append.querystring > 0) then
+          #conf.append.querystring > 0 or conf.clear_querystrings ) then
     return
   end
 
   local querystring = pl_copy_table(template_environment.query_params)
+
 
   -- Remove querystring(s)
   for _, name, value in iter(conf.remove.querystring) do
@@ -276,6 +284,18 @@ local function transform_querystrings(conf)
     end
   end
 
+  -- Append querystring(s)
+  for _, name, value in iter(conf.append.querystring) do
+    querystring[name] = append_value(querystring[name], value)
+  end
+  
+  -- Clear all querystring(s)
+  if conf.clear_querystrings then
+    for k,v in pairs(querystring) do
+      querystring[k] = nil
+    end
+  end
+
   -- Add querystring(s)
   for _, name, value in iter(conf.add.querystring) do
     if not querystring[name] then
@@ -283,10 +303,6 @@ local function transform_querystrings(conf)
     end
   end
 
-  -- Append querystring(s)
-  for _, name, value in iter(conf.append.querystring) do
-    querystring[name] = append_value(querystring[name], value)
-  end
   set_uri_args(querystring)
 end
 

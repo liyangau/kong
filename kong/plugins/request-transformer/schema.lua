@@ -1,3 +1,10 @@
+-- This software is copyright Kong Inc. and its licensors.
+-- Use of the software is subject to the agreement between your organization
+-- and Kong Inc. If there is no such agreement, use is governed by and
+-- subject to the terms of the Kong Master Software License Agreement found
+-- at https://konghq.com/enterprisesoftwarelicense/.
+-- [ END OF LICENSE 0867164ffc95e54f04670b5169c09574bdbd9bba ]
+
 local pl_template = require "pl.template"
 local tx = require "pl.tablex"
 local typedefs = require "kong.db.schema.typedefs"
@@ -128,11 +135,12 @@ return {
         type = "record",
         fields = {
           { http_method = typedefs.http_method },
+          { clear_querystrings = { type = "boolean", required = false, default = false }, },
           { remove  = strings_array_record },
           { rename  = colon_rename_strings_array_record },
           { replace = colon_strings_array_record_plus_uri },
           { add     = colon_strings_array_record },
-          { append  = colon_strings_array_record },
+          { append  = colon_strings_array_record }
         }
       },
     },
