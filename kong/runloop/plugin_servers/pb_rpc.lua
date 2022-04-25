@@ -151,6 +151,18 @@ do
     [".kong_plugin_protocol.Number"] = wrap_val,
     [".kong_plugin_protocol.Int"] = wrap_val,
     [".kong_plugin_protocol.String"] = wrap_val,
+    [".kong_plugin_protocol.RawBodyResult"] = function(v, err)
+      if type(v) == "string" then
+        return {  content = v }
+      end
+
+      local path = ngx.req.get_body_file()
+      if path then
+        return { body_filepath = path }
+      end
+
+      return { error = err or "Can't read request body" }
+    end,
     --[".kong_plugin_protocol.MemoryStats"] = - function(v)
     --  return {
     --    lua_shared_dicts = {
@@ -381,10 +393,11 @@ function Rpc:handle_event(plugin_name, conf, phase)
     instance_id = instance_id,
     event_name = phase,
   }, true)
-  if not res then
+  if not res or res == "" then
     kong.log.err(err)
+    if    string.match(err:lower(), "no plugin instance")
+       or string.match(err:lower(), "closed")  then
 
-    if string.match(err:lower(), "no plugin instance") then
       self.reset_instance(plugin_name, conf)
       return self:handle_event(plugin_name, conf, phase)
     end

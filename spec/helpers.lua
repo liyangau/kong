@@ -20,6 +20,10 @@ local MOCK_UPSTREAM_SSL_PORT = 15556
 local MOCK_UPSTREAM_STREAM_PORT = 15557
 local MOCK_UPSTREAM_STREAM_SSL_PORT = 15558
 local MOCK_GRPC_UPSTREAM_PROTO_PATH = "./spec/fixtures/grpc/hello.proto"
+local REDIS_HOST = os.getenv("KONG_SPEC_TEST_REDIS_HOST") or "localhost"
+local REDIS_PORT = tonumber(os.getenv("KONG_SPEC_TEST_REDIS_PORT") or 6379)
+local REDIS_SSL_PORT = tonumber(os.getenv("KONG_SPEC_TEST_REDIS_SSL_PORT") or 6380)
+local REDIS_SSL_SNI = os.getenv("KONG_SPEC_TEST_REDIS_SSL_SNI") or "test-redis.example.com"
 local BLACKHOLE_HOST = "10.255.255.255"
 local KONG_VERSION = require("kong.meta")._VERSION
 local PLUGINS_LIST
@@ -180,19 +184,22 @@ end
 local conf = assert(conf_loader(TEST_CONF_PATH))
 
 _G.kong = kong_global.new()
-kong_global.init_pdk(_G.kong, conf, nil) -- nil: latest PDK
+kong_global.init_pdk(_G.kong, conf)
 ngx.ctx.KONG_PHASE = kong_global.phases.access
 _G.kong.core_cache = {
-  get = function(self, key)
+  get = function(self, key, opts, func, ...)
     if key == constants.CLUSTER_ID_PARAM_KEY then
       return "123e4567-e89b-12d3-a456-426655440000"
     end
+
+    return func(...)
   end
 }
 
 local db = assert(DB.new(conf))
 assert(db:init_connector())
 db.plugins:load_plugin_schemas(conf.loaded_plugins)
+db.vaults_beta:load_vault_schemas(conf.loaded_vaults)
 local blueprints = assert(Blueprints.new(db))
 local dcbp
 local config_yml
@@ -399,6 +406,7 @@ local function get_db_utils(strategy, tables, plugins)
 
   db:truncate("plugins")
   assert(db.plugins:load_plugin_schemas(conf.loaded_plugins))
+  assert(db.vaults_beta:load_vault_schemas(conf.loaded_vaults))
 
   -- cleanup the tags table, since it will be hacky and
   -- not necessary to implement "truncate trigger" in Cassandra
@@ -1070,7 +1078,8 @@ local function tcp_server(port, opts)
         end
 
         if opts.tls and handshake_done then
-          local ssl = require "ssl"
+          local ssl = require "spec.helpers.ssl"
+
           local params = {
             mode = "server",
             protocol = "any",
@@ -1903,7 +1912,6 @@ Got instead:
 luassert:register("assertion", "cn", assert_cn,
                   "assertion.cn.negative",
                   "assertion.cn.positive")
-
 
 do
   --- Generic modifier "logfile"
@@ -2831,7 +2839,10 @@ end
   mock_upstream_stream_ssl_port = MOCK_UPSTREAM_STREAM_SSL_PORT,
   mock_grpc_upstream_proto_path = MOCK_GRPC_UPSTREAM_PROTO_PATH,
 
-  redis_host = os.getenv("KONG_SPEC_REDIS_HOST") or "127.0.0.1",
+  redis_host      = REDIS_HOST,
+  redis_port      = REDIS_PORT,
+  redis_ssl_port  = REDIS_SSL_PORT,
+  redis_ssl_sni   = REDIS_SSL_SNI,
 
   blackhole_host = BLACKHOLE_HOST,
 
